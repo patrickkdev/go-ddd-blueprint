@@ -212,7 +212,7 @@ To illustrate how these principles and patterns work in practice, let's consider
 
 ### Domain Layer
 
-```
+```go
 // internal/domain/person.go
 package domain
 
