@@ -1,0 +1,2 @@
+# go_ddd_architecture_philosophy_guide
+Golang DDD Architecture
