@@ -258,7 +258,7 @@ In this example, `Person` is an entity with an `ID`, `Name`, `Email`, and `Role`
 
 ### Application Layer
 
-```
+```go
 // internal/application/person.go
 package application
 
@@ -340,7 +340,7 @@ The `PersonService` implements use cases for managing `Person` entities. It uses
 
 ### Infrastructure Layer
 
-```
+```go
 // internal/infrastructure/database/person_repository.go
 package database
 
@@ -392,7 +392,7 @@ The `PersonRepository` in the `database` package implements the `domain.PersonRe
 
 ### Interface Layer
 
-```
+```go
 // internal/interface/cli/person_cli_adapter.go
 package cli
 
