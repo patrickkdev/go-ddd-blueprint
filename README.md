@@ -4,8 +4,6 @@ Guide for Simple, Maintainable, and Scalable Golang DDD
 Introduction
 ------------
 
-This document outlines our company's philosophy and architectural approach to building software, specifically using Domain-Driven Design (DDD) in Golang. It serves as the definitive guide for how we structure our projects, manage dependencies, and approach common challenges. Our goal is to create systems that are not only functional but also maintainable, scalable, and easy to understand.
-
 This guide is a living document, reflecting our collective experience and ongoing refinement of best practices. We encourage all engineers to contribute to its evolution.
 
 **Our Perspective (As of March 19, 2025)**
