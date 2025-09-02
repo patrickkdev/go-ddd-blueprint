@@ -86,7 +86,7 @@ Our project structure is a key element of our architectural approach. It provide
 │               └── whatsapp_handler.go   # Handler for WhatsApp web requests (JSON)
 ├── pkg               # Reusable, application-independent packages
 │   └── utils           # Utility functions
-│       └── deboucer.go    # Example: Debouncer implementation
+│       └── debouncer.go    # Example: Debouncer implementation
 └── README.md         # Project documentation
 
 ```
