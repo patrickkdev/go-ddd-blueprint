@@ -4,7 +4,7 @@
 
 ## Introduction
 
-The approach detailed in this guide represents my current best understanding of how to design and build software. It's the result of significant experience with various architectural patterns and methodologies, including a close examination of resources like the [sklinkert/go-ddd](https://github.com/sklinkert/go-ddd) template. I’ve adopted what works well and adapted other elements, to arrive at what I believe is an optimal approach. This isn't to say this is the *only* way, but it's the way I’ve found leads to the most consistent and successful outcomes.
+The approach detailed in this guide represents what I currently believe is the best way to design and build software using Go and Domain-Driven Design. It is based on practical experience and resources like [sklinkert/go-ddd](https://github.com/sklinkert/go-ddd). I’ve adopted what works well and adapted other elements to arrive at what I believe is an optimal approach.
 
 ---
 
