@@ -560,4 +560,4 @@ I adhere to the principles of clean code, including:
 
 ## Conclusion
 
-This guide reflects my architectural approach to building software with Golang and DDD. By following these principles, I aim to create systems that are simple, maintainable, scalable, and easy to understand. This is a living document, and I’ll continue refining it as I learn.
+By following these principles, I aim to create systems that are simple, maintainable, scalable, and easy to understand. This is a living document, and I’ll continue refining it as I learn.
