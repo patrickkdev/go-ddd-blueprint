@@ -99,7 +99,7 @@ The project structure provides a consistent and predictable way to organize code
 
     -   **domain:** This is the heart of the application. It contains the business logic, represented as entities, value objects, and interfaces. The domain layer is completely independent of any technical details, such as databases or web frameworks. It defines *what* the application does, not *how* it does it.
 
-        -   Like the application layer, I also keep the domain layer as a single, flat package. I find that this simplifies the organization of domain concepts and reduces the likelihood of circular dependencies. I use naming conventions (e.g., `PersonEntity`, `ChatService`, `MessageValueObject`) to distinguish between different types of domain objects.
+        -   Like the application layer, I also keep the domain layer as a single, flat package. I find that this simplifies the organization of domain concepts and reduces the likelihood of circular dependencies.
 
         -   **Entities:** Represent objects with a unique identity and lifecycle (e.g., a `Person`, an `Order`). Entities encapsulate both data and behavior. Validation logic that enforces business rules is often placed within entity methods. For example, a `Person` entity might have a `ChangeName(newName string) error` method that validates the new name before updating the entity's state.
 
