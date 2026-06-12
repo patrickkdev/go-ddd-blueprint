@@ -32,61 +32,61 @@ Before diving into the structure, let's define the core principles that underpin
 The project structure provides a consistent and predictable way to organize code, making it easier to navigate and understand different projects. Here's a detailed breakdown:
 
 ```
-├── cmd
-│   ├── desktop       # Application entry point for desktop applications
+├── cmd	# Entry points
+│   ├── desktop       						# Application entry point for desktop applications
 │   │   └── main.go
-│   ├── web_app       # Application entry point for web application
+│   ├── web_app       						# Application entry point for web application
 │   │   └── main.go
-│   ├── api           # Application entry point for api
+│   ├── api           						# Application entry point for api
 │   │   └── main.go
-│   └── cli           # Application entry point for command-line applications
+│   └── cli           						# Application entry point for command-line applications
 │       └── main.go
-├── config            # Configuration loading and management
-│   ├── database.go     # Example: Configuration specific to database connection
-│   └── whatsapp.go     # Example: Configuration specific to WhatsApp integration
-├── internal          # Internal application code (not intended for external use)
-│   ├── application     # Application-level services (use cases, orchestration)
-│   │   ├── chatbot_service.go  # Handles chatbot workflows (message processing, responses)
-│   │   ├── user_service.go   # Coordinates user-related operations (create, update, fetch)
-│   │   └── auth_service.go     # Manages authentication (login, signup, token issuance)
-│   ├── domain          # Domain logic (entities, value objects, interfaces)
-│   │   ├── chat.go        # Example: Domain model for a Chat
-│   │   ├── message.go     # Example: Domain model for a Message
-│   │   ├── user.go      # Example: Domain model for a User
-│   │   └── role.go        # Example: Domain model for a Role
-│   ├── infrastructure    # Implementation of external dependencies (databases, APIs, etc.)
-│   │   ├── ai           # Integration with AI services
-│   │   │   ├── client.go  # Client for the AI service
-│   │   │   ├── message.go # Handling AI-specific message structures
-│   │   │   ├── persona.go # Managing AI personas
-│   │   │   └── role.go    # AI-specific roles
-│   │   ├── database      # Database interaction (e.g., PostgreSQL)
-│   │   │   ├── client.go  # Database client
-│   │   │   └── user_repository.go # Implementation of UserRepository
-│   │   ├── messaging     # Generic messaging infrastructure
-│   │   │   └── sender.go    # Interface and common logic for message sending
-│   │   ├── telegram      # Integration with Telegram
-│   │   │   ├── chat.go    # Telegram-specific chat handling
-│   │   │   └── client.go  # Telegram client
-│   │   └── whatsapp      # Integration with WhatsApp
-│   │       ├── chat.go    # WhatsApp-specific chat handling
-│   │       ├── client.go  # WhatsApp client
-│   │       └── event.go   # Handling WhatsApp events
-│   └── interface       # Adapters for external systems (e.g., HTTP, CLI)
-│       ├── cli           # Command-line interface adapters
-│       │   └── user_cli_adapter.go # Example: CLI adapter for User-related commands
-│       └── http          # HTTP interface adapters
-│           ├── html      # for http requests that return HTML
+├── config            						# Configuration loading and management
+│   ├── database.go
+│   └── whatsapp.go
+├── internal          				# Internal application code (not intended for external use)
+│   ├── domain          				# Domain logic (entities, value objects, interfaces)
+│   │   ├── chat.go        					# Example: Domain model for a Chat
+│   │   ├── message.go     					# Example: Domain model for a Message
+│   │   ├── user.go      					# Example: Domain model for a User
+│   │   └── role.go        					# Example: Domain model for a Role
+│   ├── application     				# Application-level services (use cases, orchestration)
+│   │   ├── chatbot_service.go  			# Handles chatbot workflows (message processing, responses)
+│   │   ├── user_service.go   				# Coordinates user-related operations (create, update, fetch)
+│   │   └── auth_service.go     			# Manages authentication (login, signup, token issuance)
+│   ├── infrastructure    			# Implementation of external dependencies (databases, APIs, etc.)
+│   │   ├── ai           				# Integration with AI services
+│   │   │   ├── client.go  				# Client for the AI service
+│   │   │   ├── message.go 				# Handling AI-specific message structures
+│   │   │   ├── persona.go 				# Managing AI personas
+│   │   │   └── role.go    				# AI-specific roles
+│   │   ├── database      			# Database interaction (e.g., PostgreSQL)
+│   │   │   ├── client.go  				# Database client
+│   │   │   └── user_repository.go 		# Implementation of UserRepository
+│   │   ├── messaging     			# Generic messaging infrastructure
+│   │   │   └── sender.go    			# Interface and common logic for message sending
+│   │   ├── telegram      			# Integration with Telegram
+│   │   │   ├── chat.go    				# Telegram-specific chat handling
+│   │   │   └── client.go  				# Telegram client
+│   │   └── whatsapp      			# Integration with WhatsApp
+│   │       ├── chat.go    				# WhatsApp-specific chat handling
+│   │       ├── client.go  				# WhatsApp client
+│   │       └── event.go   				# Handling WhatsApp events
+│   └── interface       			# Adapters for external systems (e.g., HTTP, CLI)
+│       ├── cli           				# Command-line interface adapters
+│       │   └── user_cli_adapter.go 		# Example: CLI adapter for User-related commands
+│       └── http          				# HTTP interface adapters
+│           ├── html      					# for http requests that return HTML
 │           │   └── user_http_adapter.go
-│           └── api       # for http requests that return JSON
+│           └── api       					# for http requests that return JSON
 │               └── user_http_adapter.go
-├── pkg               # Generic, reusable code with no knowledge of this app. Think small utilities you could publish as libraries. No domain logic, no tight coupling to internal packages.
-│   ├── debounce               # Time-based call coalescing (debounce.New)
-│   │   └── debounce.go        # Debouncer implementation
-│   └── retry                  # Retry logic with backoff strategies (retry.Do)
-│       └── retry.go           # Retry helpers and policies
-├── go.mod           # Go module definition
-└── go.sum           # Go module dependencies
+├── pkg               				# Generic, reusable code with no knowledge of this app. Think small utilities you could publish as libraries. No domain logic, no tight coupling to internal packages.
+│   ├── debounce               			# Time-based call coalescing (debounce.New)
+│   │   └── debounce.go        				# Debouncer implementation
+│   └── retry                  			# Retry logic with backoff strategies (retry.Do)
+│       └── retry.go           				# Retry helpers and policies
+├── go.mod           			# Go module definition
+└── go.sum           			# Go module dependencies
 ```
 
 ### Key Directories Explained
