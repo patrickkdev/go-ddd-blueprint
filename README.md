@@ -44,8 +44,6 @@ The project structure provides a consistent and predictable way to organize code
 ├── config            # Configuration loading and management
 │   ├── database.go     # Example: Configuration specific to database connection
 │   └── whatsapp.go     # Example: Configuration specific to WhatsApp integration
-├── go.mod           # Go module definition
-├── go.sum           # Go module dependencies
 ├── internal          # Internal application code (not intended for external use)
 │   ├── application     # Application-level services (use cases, orchestration)
 │   │   ├── chatbot_service.go  # Handles chatbot workflows (message processing, responses)
@@ -85,8 +83,10 @@ The project structure provides a consistent and predictable way to organize code
 ├── pkg               # Generic, reusable code with no knowledge of this app. Think small utilities you could publish as libraries. No domain logic, no tight coupling to internal packages.
 │   ├── debounce               # Time-based call coalescing (debounce.New)
 │   │   └── debounce.go        # Debouncer implementation
-│   ├── retry                  # Retry logic with backoff strategies (retry.Do)
-│   │   └── retry.go           # Retry helpers and policies
+│   └── retry                  # Retry logic with backoff strategies (retry.Do)
+│       └── retry.go           # Retry helpers and policies
+├── go.mod           # Go module definition
+└── go.sum           # Go module dependencies
 ```
 
 ### Key Directories Explained
@@ -390,9 +390,46 @@ The `PersonRepository` in the `database` package implements the `domain.PersonRe
 
 ### Interface Layer
 
-# CLI Example
+#### CLI Example (Using Cobra framework)
 
-The `PersonCLIAdapter` handles command-line arguments and calls the appropriate methods on the `PersonService`.
+The `PersonCLIAdapter` handles command-line arguments, validates command arguments, and dispatches them to the appropriate `PersonService` methods.
+
+```go
+// cmd/cli/main.go
+package main
+
+import (
+	...
+)
+
+func main() {
+	db, err := database.NewClient(config.Database)
+	if err != nil {
+		fmt.Println("error connecting to database:", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	personRepo := database.NewPersonRepository(db)
+	personService := application.NewPersonService(personRepo)
+	personCLI := cli.NewPersonCLIAdapter(personService)
+
+	rootCmd := &cobra.Command{
+		Use: "app",
+	}
+
+	rootCmd.AddCommand(
+		personCLI.Command(),
+		// orderCLI.Command(),
+		// billingCLI.Command(),
+	)
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println("error:", err)
+		os.Exit(1)
+	}
+}
+```
 
 ```go
 // internal/interface/cli/person_cli_adapter.go
@@ -512,8 +549,12 @@ func (a *PersonCLIAdapter) CreatePerson(name, email, role string) error {
 }
 ```
 
+#### HTTP Example (Using standard net/http)
+
+The `PersonHTTPAdapter` handles incoming HTTP requests, decodes payloads, and routes them to the appropriate `PersonService` methods before returning JSON or HTML responses.
+
 ```go
-// cmd/cli/main.go
+// cmd/api/main.go
 package main
 
 import (
@@ -523,33 +564,22 @@ import (
 func main() {
 	db, err := database.NewClient(config.Database)
 	if err != nil {
-		fmt.Println("error connecting to database:", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	defer db.Close()
 
 	personRepo := database.NewPersonRepository(db)
 	personService := application.NewPersonService(personRepo)
-	personCLI := cli.NewPersonCLIAdapter(personService)
 
-	rootCmd := &cobra.Command{
-		Use: "app",
-	}
+	personAdapter := api.NewPersonHTTPAdapter(personService)
 
-	rootCmd.AddCommand(
-		personCLI.Command(),
-		// orderCLI.Command(),
-		// billingCLI.Command(),
-	)
+	mux := http.NewServeMux()
+	personAdapter.RegisterRoutes(mux)
 
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println("error:", err)
-		os.Exit(1)
-	}
+	log.Println("HTTP server running on :8080")
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }
 ```
-
-# HTTP Example
 
 ```go
 // internal/interface/http/api/person_http_adapter.go
@@ -668,34 +698,6 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	if err := json.NewEncoder(w).Encode(v); err != nil {
 		http.Error(w, "failed to encode response", http.StatusInternalServerError)
 	}
-}
-```
-
-```go
-// cmd/api/main.go
-package main
-
-import (
-	...
-)
-
-func main() {
-	db, err := database.NewClient(config.Database)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	personRepo := database.NewPersonRepository(db)
-	personService := application.NewPersonService(personRepo)
-
-	personAdapter := api.NewPersonHTTPAdapter(personService)
-
-	mux := http.NewServeMux()
-	personAdapter.RegisterRoutes(mux)
-
-	log.Println("HTTP server running on :8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
 }
 ```
 
