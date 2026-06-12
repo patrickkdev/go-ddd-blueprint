@@ -248,11 +248,11 @@ const (
 var ErrInvalidName = errors.New("name must be at least 3 characters long")
 
 // ChangeName changes the name of the user.
-func (p *User) ChangeName(newName string) error {
+func (u *User) ChangeName(newName string) error {
     if len(newName) < 3 {
         return ErrInvalidName
     }
-    p.Name = newName
+    u.Name = newName
     return nil
 }
 
@@ -334,7 +334,7 @@ func (s *UserService) CreateUser(name, email string, role domain.Role) (string, 
 
 ```
 
-The `UserService` implements use cases for managing `User` entities. It uses the `UserRepository` interface to interact with the persistence layer. It also handles application-level errors, such as `ErrUserNotFound`, and ensures that domain logic is correctly applied.
+The `UserService` implements use cases for managing `User` entities. It uses the `UserRepository` interface to interact with the persistence layer. It also handles application-level validation, handles errors cleanly without leaking database types, and ensures that domain logic is correctly applied."
 
 ### Infrastructure Layer
 
@@ -411,8 +411,8 @@ func main() {
 	defer db.Close()
 
 	userRepo := database.NewUserRepository(db)
-	userservice := application.NewUserService(userRepo)
-	userAdapter := cli.NewUserCLIAdapter(userservice)
+	userService := application.NewUserService(userRepo)
+	userAdapter := cli.NewUserCLIAdapter(userService)
 
 	rootCmd := &cobra.Command{
 		Use: "app",
@@ -441,12 +441,12 @@ import (
 
 // UserCLIAdapter handles CLI commands for managing users.
 type UserCLIAdapter struct {
-	userservice *application.UserService
+	userService *application.UserService
 }
 
-func NewUserCLIAdapter(userservice *application.UserService) *UserCLIAdapter {
+func NewUserCLIAdapter(userService *application.UserService) *UserCLIAdapter {
 	return &UserCLIAdapter{
-		userservice: userservice,
+		userService: userService,
 	}
 }
 
@@ -500,7 +500,7 @@ func (a *UserCLIAdapter) createUserCmd() *cobra.Command {
 }
 
 func (a *UserCLIAdapter) GetUserByID(id string) error {
-	user, err := a.userservice.GetUserByID(id)
+	user, err := a.userService.GetUserByID(id)
 	if err != nil {
 		if errors.Is(err, domain.ErrItemNotFound) {
 			return fmt.Errorf("user with ID '%s' not found", id)
@@ -515,7 +515,7 @@ func (a *UserCLIAdapter) GetUserByID(id string) error {
 }
 
 func (a *UserCLIAdapter) UpdateUserName(id, newName string) error {
-	err := a.userservice.UpdateUserName(id, newName)
+	err := a.userService.UpdateUserName(id, newName)
 	if err != nil {
 		if errors.Is(err, domain.ErrItemNotFound) {
 			return fmt.Errorf("user with ID '%s' not found", id)
@@ -539,7 +539,7 @@ func (a *UserCLIAdapter) CreateUser(name, email, role string) error {
 		return fmt.Errorf("invalid role: must be 'admin' or 'user'")
 	}
 
-	userID, err := a.userservice.CreateUser(name, email, roleValue)
+	userID, err := a.userService.CreateUser(name, email, roleValue)
 	if err != nil {
 		return err
 	}
@@ -569,9 +569,9 @@ func main() {
 	defer db.Close()
 
 	userRepo := database.NewUserRepository(db)
-	userservice := application.NewUserService(userRepo)
+	userService := application.NewUserService(userRepo)
 
-	userAdapter := api.NewUserHTTPAdapter(userservice)
+	userAdapter := api.NewUserHTTPAdapter(userService)
 
 	mux := http.NewServeMux()
 	userAdapter.RegisterRoutes(mux)
@@ -590,12 +590,12 @@ import (
 )
 
 type UserHTTPAdapter struct {
-	userservice *application.UserService
+	userService *application.UserService
 }
 
-func NewUserHTTPAdapter(userservice *application.UserService) *UserHTTPAdapter {
+func NewUserHTTPAdapter(userService *application.UserService) *UserHTTPAdapter {
 	return &UserHTTPAdapter{
-		userservice: userservice,
+		userService: userService,
 	}
 }
 
@@ -616,7 +616,7 @@ type UserResponse struct {
 func (a *UserHTTPAdapter) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	user, err := a.userservice.GetUserByID(id)
+	user, err := a.userService.GetUserByID(id)
 	if err != nil {
 		if errors.Is(err, domain.ErrItemNotFound) {
 			http.Error(w, "user not found", http.StatusNotFound)
@@ -657,7 +657,7 @@ func (a *UserHTTPAdapter) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := a.userservice.CreateUser(req.Name, req.Email, role)
+	id, err := a.userService.CreateUser(req.Name, req.Email, role)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -678,7 +678,7 @@ func (a *UserHTTPAdapter) UpdateUserName(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err := a.userservice.UpdateUserName(id, req.Name)
+	err := a.userService.UpdateUserName(id, req.Name)
 	if err != nil {
 		if errors.Is(err, domain.ErrItemNotFound) {
 			http.Error(w, "user not found", http.StatusNotFound)
