@@ -33,13 +33,16 @@ The project structure provides a consistent and predictable way to organize code
 
 ```
 ├── cmd
-│   ├── desktop         # Application entry point for desktop applications
+│   ├── desktop       # Application entry point for desktop applications
 │   │   └── main.go
-│   ├── web             # Application entry point for web applications
+│   ├── web_app       # Application entry point for web application
 │   │   └── main.go
-│   └── cli             # Application entry point for command-line applications
+│   ├── api           # Application entry point for api
+│   │   └── main.go
+│   └── cli           # Application entry point for command-line applications
 │       └── main.go
 ├── config            # Configuration loading and management
+│   ├── database.go     # Example: Configuration specific to database connection
 │   └── whatsapp.go     # Example: Configuration specific to WhatsApp integration
 ├── go.mod           # Go module definition
 ├── go.sum           # Go module dependencies
@@ -74,21 +77,21 @@ The project structure provides a consistent and predictable way to organize code
 │   └── interface       # Adapters for external systems (e.g., HTTP, CLI)
 │       ├── cli           # Command-line interface adapters
 │       │   └── person_cli_adapter.go # Example: CLI adapter for Person-related commands
-│       └── web           # Web interface adapters
-│           ├── html        # HTML rendering
-│           │   ├── telegram_handler.go   # Handler for Telegram web requests (HTML)
-│           │   └── whatsapp_handler.go   # Handler for WhatsApp web requests (HTML)
-│           └── json        # JSON API
-│               ├── telegram_handler.go   # Handler for Telegram web requests (JSON)
-│               └── whatsapp_handler.go   # Handler for WhatsApp web requests (JSON)
-├── pkg               # Reusable, application-independent packages
-│   └── utils           # Utility functions (choose names that read well when imported—e.g., `debounce.New()` feels better than `utils.Debouncer`)
-│       └── debouncer.go    # Example: Debouncer implementation
+│       └── http          # HTTP interface adapters
+│           ├── html      # for http requests that return HTML
+│           │   └── person_http_adapter.go
+│           └── api       # for http requests that return JSON
+│               └── person_http_adapter.go
+├── pkg               # Generic, reusable code with no knowledge of this app. Think small utilities you could publish as libraries. No domain logic, no tight coupling to internal packages.
+│   ├── debounce               # Time-based call coalescing (debounce.New)
+│   │   └── debounce.go        # Debouncer implementation
+│   ├── retry                  # Retry logic with backoff strategies (retry.Do)
+│   │   └── retry.go           # Retry helpers and policies
 ```
 
 ### Key Directories Explained
 
--   **cmd:** This directory contains the main entry points for the applications. Each subdirectory represents a different way of running the application (e.g., `cli` for command-line interface, `web` for a web server, `desktop` for a desktop application). This allows me to have multiple ways to run the same underlying application logic. I strive to keep this directory very thin, with minimal logic. Its primary responsibility is to initialize the necessary dependencies and start the application.
+-   **cmd:** This directory contains the main entry points for the applications. Each subdirectory represents a different way of running the application (e.g., `cli` for command-line interface, `api` for a web server, `desktop` for a desktop application). This allows me to have multiple ways to run the same underlying application logic. I strive to keep this directory very thin, with minimal logic. Its primary responsibility is to initialize the necessary dependencies and start the application.
 
 -   **config:** This directory holds the application's configuration. I typically use a library like `godotenv` to load configuration from environment variables, files, or other sources. Configuration is structured to be easily accessible and type-safe. For example, `whatsapp.go` might define a struct with fields like `APIKey`, `PhoneNumber`, and `Timeout`.
 
@@ -106,7 +109,7 @@ The project structure provides a consistent and predictable way to organize code
 
         -   **Value Objects:** Represent immutable objects that are defined by their attributes rather than their identity (e.g., a `Date`, a `Money` amount). Value objects should be treated as interchangeable; two value objects with the same attributes are considered equal.
 
-        -   **Interfaces:** Define contracts that are implemented by the infrastructure layer. For example, the domain layer might define a `MessageSender` interface with a `SendMessage(user Person, message Message) error` method. This allows the application layer to depend on the *abstraction* of message sending, without being tied to a specific *implementation* (e.g., sending via WhatsApp or Telegram). This is a key aspect of achieving loose coupling and testability. I might use the Strategy pattern here, where the specific implementation of `MessageSender` is chosen at runtime. For instance, a `User` entity might embed a `MessageSender` interface, and the application layer would inject the appropriate implementation (e.g., a `WhatsAppMessageSender` or a `TelegramMessageSender`). Alternatively, I might use decorators to add functionality, such as validation, before calling the underlying implementation.
+        -   **Interfaces:** Define contracts that are implemented by the infrastructure layer. For example, the domain layer might define a `MessageSender` interface with a `SendMessage(user Person, message Message) error` method. This allows the application layer to depend on the *abstraction* of message sending, without being tied to a specific *implementation* (e.g., sending via WhatsApp or Telegram). This is a key aspect of achieving loose coupling and testability.
 
     -   **infrastructure:** This layer provides the technical implementation of the interfaces defined in the domain layer. It handles communication with external systems, such as databases, message queues, and third-party APIs. Code in this layer is responsible for *how* things are done.
 
@@ -114,13 +117,13 @@ The project structure provides a consistent and predictable way to organize code
 
     -   **interface:** This layer acts as the entry point for external requests and translates them into commands that can be processed by the application layer. It's responsible for handling the specifics of the communication protocol (e.g., HTTP, CLI) and for presenting the application's response to the user.
 
-        -   I structure this layer by the type of interface (e.g., `cli`, `web`). Within each interface type, I may further organize the code by specific functionality or technology.
+        -   I structure this layer by the type of interface (e.g., `cli`, `http`). Within each interface type, I may further organize the code by specific functionality or technology.
 
-        -   For example, the `web` package might be further divided into `html` and `json` subpackages to handle different response formats. Each of these subpackages would then contain handlers for specific resources (e.g., `telegram_handler.go`, `whatsapp_handler.go`).
+        -   For example, the `http` package might be further divided into `html` and `api` subpackages to handle different response formats. Each of these subpackages would then contain adapters for specific resources (e.g., `person_http_adapter.go`).
 
         -   The `cli` package would contain adapters that handle argument parsing, command dispatching, and output formatting. For example, `person_cli_adapter.go` might define functions to handle commands related to creating, updating, or deleting `Person` entities. It acts as an intermediary between the user's terminal input and the application layer.
 
--   **pkg:** This directory contains reusable packages that are not specific to the application's domain. These packages can be used across multiple projects. Examples include utility functions, generic data structures, and third-party library wrappers. Code in this directory should not depend on any code in the `internal` directory. For example, `utils/deboucer.go` provides a utility function for debouncing events, which can be used in various parts of the application without introducing dependencies on the core domain logic.
+-   **pkg:** This directory contains reusable packages that are not specific to the application's domain. These packages can be used across multiple projects. Examples include utility functions, generic data structures, and third-party library wrappers. Code in this directory should not depend on any code in the `internal` directory. 
 
 ---
 
@@ -132,7 +135,7 @@ To maintain a clean architecture and prevent tight coupling, I adhere to the fol
 
 -   **application:** The application layer can only depend on the domain layer. It orchestrates domain logic but should not be aware of the implementation details of external systems. If the application layer needs to interact with an external service, the interface for that service is defined in the domain layer, and the application layer depends on that interface.
 
--   **interface:** Interface layers (e.g., `cli`, `web`) can depend on both the domain layer and the application layer. They translate external requests into application commands and present the results to the user.
+-   **interface:** Interface layers (e.g., `cli`, `http`) can depend on both the domain layer and the application layer. They translate external requests into application commands and present the results to the user.
 
 -   **infrastructure:** Infrastructure packages can only depend on the domain layer. They implement the interfaces defined in the domain layer and may use external libraries or frameworks to interact with external systems. They should not depend on the application or interface layers.
 
@@ -223,7 +226,7 @@ type Person struct {
 
 func NewPerson(name string, email string, role Role) (Person, error) {
     if len(name) < 3 {
-        return nil, ErrInvalidName
+        return Person{}, ErrInvalidName
     }
     return Person{
         ID:    uuid.New().String(),
@@ -322,7 +325,7 @@ func (s *PersonService) CreatePerson(name, email string, role domain.Role) (stri
     	return "", err
     }
 
-    err := s.personRepo.Save(person)
+    err = s.personRepo.Save(person)
     if err != nil {
         return "", err
     }
@@ -364,7 +367,7 @@ func (r *PersonRepository) GetByID(id string) (domain.Person, error) {
     err := row.Scan(&person.ID, &person.Name, &person.Email, &person.Role)
     if err != nil {
         if errors.Is(err, sql.ErrNoRows) {
-            return domain.Person{}, domain.ErrPersonNotFound // Use the error from the domain
+            return domain.Person{}, domain.ErrItemNotFound // Use the error from the domain
         }
         return domain.Person{}, err
     }
@@ -383,19 +386,20 @@ func (r *PersonRepository) Save(person domain.Person) error {
 
 ```
 
-The `PersonRepository` in the `database` package implements the `domain.PersonRepository` interface using a PostgreSQL database. It handles the mapping between the domain model (`domain.Person`) and the database schema. Error handling is crucial here. I translate database-specific errors (e.g., `sql.ErrNoRows`) into domain-specific errors (e.g., `domain.ErrPersonNotFound`) to avoid leaking implementation details.
+The `PersonRepository` in the `database` package implements the `domain.PersonRepository` interface using a PostgreSQL database. It handles the mapping between the domain model (`domain.Person`) and the database schema. Error handling is crucial here. I translate database-specific errors (e.g., `sql.ErrNoRows`) into domain-specific errors (e.g., `domain.ErrItemNotFound`) to avoid leaking implementation details.
 
 ### Interface Layer
+
+# CLI Example
+
+The `PersonCLIAdapter` handles command-line arguments and calls the appropriate methods on the `PersonService`.
 
 ```go
 // internal/interface/cli/person_cli_adapter.go
 package cli
 
 import (
-	"example.com/internal/application"
-	"example.com/internal/domain"
-	"fmt"
-	"os"
+	...
 )
 
 // PersonCLIAdapter handles CLI commands for managing persons.
@@ -403,110 +407,295 @@ type PersonCLIAdapter struct {
 	personService *application.PersonService
 }
 
-// NewPersonCLIAdapter creates a new PersonCLIAdapter.
 func NewPersonCLIAdapter(personService *application.PersonService) *PersonCLIAdapter {
 	return &PersonCLIAdapter{
 		personService: personService,
 	}
 }
 
-// GetPersonByID handles the "get-person" command.
-func (a *PersonCLIAdapter) GetPersonByID(id string) {
+// Command returns the root cobra command for this adapter.
+func (a *PersonCLIAdapter) Command() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "person",
+		Short: "Manage persons",
+	}
+
+	cmd.AddCommand(
+		a.getPersonCmd(),
+		a.updatePersonCmd(),
+		a.createPersonCmd(),
+	)
+
+	return cmd
+}
+
+func (a *PersonCLIAdapter) getPersonCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "get [id]",
+		Short: "Get a person by ID",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return a.GetPersonByID(args[0])
+		},
+	}
+}
+
+func (a *PersonCLIAdapter) updatePersonCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "update-name [id] [name]",
+		Short: "Update a person's name",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return a.UpdatePersonName(args[0], args[1])
+		},
+	}
+}
+
+func (a *PersonCLIAdapter) createPersonCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "create [name] [email] [role]",
+		Short: "Create a new person",
+		Args:  cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return a.CreatePerson(args[0], args[1], args[2])
+		},
+	}
+}
+
+func (a *PersonCLIAdapter) GetPersonByID(id string) error {
 	person, err := a.personService.GetPersonByID(id)
 	if err != nil {
-		if errors.Is(err, domain.ErrPersonNotFound) {
-			fmt.Printf("Error: Person with ID '%s' not found.\n", id)
-			return
+		if errors.Is(err, domain.ErrItemNotFound) {
+			return fmt.Errorf("person with ID '%s' not found", id)
 		}
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1) // Use os.Exit for consistent error handling in CLI
+		return err
 	}
-	fmt.Printf("ID: %s, Name: %s, Email: %s, Role: %s\n", person.ID, person.Name, person.Email, person.Role)
+
+	fmt.Printf("ID: %s, Name: %s, Email: %s, Role: %s\n",
+		person.ID, person.Name, person.Email, person.Role,
+	)
+	return nil
 }
 
-// UpdatePersonName handles the "update-person-name" command.
-func (a *PersonCLIAdapter) UpdatePersonName(id, newName string) {
+func (a *PersonCLIAdapter) UpdatePersonName(id, newName string) error {
 	err := a.personService.UpdatePersonName(id, newName)
 	if err != nil {
-		if errors.Is(err, domain.ErrPersonNotFound) {
-			fmt.Printf("Error: Person with ID '%s' not found.\n", id)
-			return
+		if errors.Is(err, domain.ErrItemNotFound) {
+			return fmt.Errorf("person with ID '%s' not found", id)
 		}
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
+
 	fmt.Println("Person name updated successfully.")
+	return nil
 }
 
-// CreatePerson handles the "create-person" command.
-func (a *PersonCLIAdapter) CreatePerson(name, email, role string) {
+func (a *PersonCLIAdapter) CreatePerson(name, email, role string) error {
 	var roleValue domain.Role
+
 	switch role {
 	case "admin":
 		roleValue = domain.RoleAdmin
 	case "user":
 		roleValue = domain.RoleUser
 	default:
-		fmt.Println("Error: Invalid role.  Must be 'admin' or 'user'.")
-		os.Exit(1)
+		return fmt.Errorf("invalid role: must be 'admin' or 'user'")
 	}
+
 	personID, err := a.personService.CreatePerson(name, email, roleValue)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
+
 	fmt.Printf("Person created successfully with ID: %s\n", personID)
+	return nil
 }
 ```
 
-The `PersonCLIAdapter` handles command-line arguments and calls the appropriate methods on the `PersonService`. It then formats the output and displays it to the user. This is a simplified example; in a real-world application, you would likely use a library like `cobra` or `flag` to handle command-line argument parsing and command dispatching. Error handling in the CLI should be consistent and user-friendly.
-
 ```go
 // cmd/cli/main.go
+package main
+
+import (
+	...
+)
+
 func main() {
-	db, err := sql.Open("postgres", "your_postgres_connection_string") // Replace with your connection string.
+	db, err := database.NewClient(config.Database)
 	if err != nil {
-		fmt.Printf("Error connecting to database: %v\n", err)
+		fmt.Println("error connecting to database:", err)
 		os.Exit(1)
 	}
 	defer db.Close()
 
 	personRepo := database.NewPersonRepository(db)
 	personService := application.NewPersonService(personRepo)
-	personCLIAdapter := NewPersonCLIAdapter(personService)
+	personCLI := cli.NewPersonCLIAdapter(personService)
 
-	// Example: Handling a command-line argument
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "get-person":
-			if len(os.Args) > 2 {
-personCLIAdapter.GetPersonByID(os.Args[2])
-			} else {
-				fmt.Println("Usage: get-person <id>")
-				os.Exit(1)
-			}
-		case "update-person-name":
-			if len(os.Args) > 3 {
-				personCLIAdapter.UpdatePersonName(os.Args[2], os.Args[3])
-			} else {
-				fmt.Println("Usage: update-person-name <id> <new_name>")
-				os.Exit(1)
-			}
-		case "create-person":
-			if len(os.Args) > 5 {
-				personCLIAdapter.CreatePerson(os.Args[2], os.Args[3], os.Args[4], os.Args[5])
-			} else {
-				fmt.Println("Usage: create-person <id> <name> <email> <role>")
-				os.Exit(1)
-			}
-		default:
-			fmt.Println("Usage: get-person | update-person-name | create-person")
-			os.Exit(1)
-		}
-	} else {
-		fmt.Println("Usage: get-person | update-person-name | create-person")
+	rootCmd := &cobra.Command{
+		Use: "app",
+	}
+
+	rootCmd.AddCommand(
+		personCLI.Command(),
+		// orderCLI.Command(),
+		// billingCLI.Command(),
+	)
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println("error:", err)
 		os.Exit(1)
 	}
+}
+```
+
+# HTTP Example
+
+```go
+// internal/interface/http/api/person_http_adapter.go
+package api
+
+import (
+	...
+)
+
+type PersonHTTPAdapter struct {
+	personService *application.PersonService
+}
+
+func NewPersonHTTPAdapter(personService *application.PersonService) *PersonHTTPAdapter {
+	return &PersonHTTPAdapter{
+		personService: personService,
+	}
+}
+
+// RegisterRoutes wires HTTP routes to handlers.
+func (a *PersonHTTPAdapter) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /persons/{id}", a.GetPersonByID)
+	mux.HandleFunc("POST /persons", a.CreatePerson)
+	mux.HandleFunc("PATCH /persons/{id}/name", a.UpdatePersonName)
+}
+
+type PersonResponse struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
+}
+
+func (a *PersonHTTPAdapter) GetPersonByID(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	person, err := a.personService.GetPersonByID(id)
+	if err != nil {
+		if errors.Is(err, domain.ErrItemNotFound) {
+			http.Error(w, "person not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, PersonResponse{
+		ID:    person.ID,
+		Name:  person.Name,
+		Email: person.Email,
+		Role:  string(person.Role),
+	})
+}
+
+func (a *PersonHTTPAdapter) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+		Role  string `json:"role"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	var role domain.Role
+	switch req.Role {
+	case "admin":
+		role = domain.RoleAdmin
+	case "user":
+		role = domain.RoleUser
+	default:
+		http.Error(w, "invalid role", http.StatusBadRequest)
+		return
+	}
+
+	id, err := a.personService.CreatePerson(req.Name, req.Email, role)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]string{"id": id})
+}
+
+func (a *PersonHTTPAdapter) UpdatePersonName(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	var req struct {
+		Name string `json:"name"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err := a.personService.UpdatePersonName(id, req.Name)
+	if err != nil {
+		if errors.Is(err, domain.ErrItemNotFound) {
+			http.Error(w, "person not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+	}
+}
+```
+
+```go
+// cmd/api/main.go
+package main
+
+import (
+	...
+)
+
+func main() {
+	db, err := database.NewClient(config.Database)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	personRepo := database.NewPersonRepository(db)
+	personService := application.NewPersonService(personRepo)
+
+	personAdapter := api.NewPersonHTTPAdapter(personService)
+
+	mux := http.NewServeMux()
+	personAdapter.RegisterRoutes(mux)
+
+	log.Println("HTTP server running on :8080")
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }
 ```
 
@@ -543,7 +732,7 @@ I use a consistent logging strategy to track the behavior of the applications, d
 
 ### Configuration
 
-I tipically use a `godotenv` to load configuration from a .env file in development and testing enviroments.
+I typically use a `godotenv` to load configuration from a .env file in development and testing environments.
 
 ### Code Style
 
@@ -555,10 +744,13 @@ I adhere to the principles of clean code, including:
 
 -   Short and focused functions.
 
-`gofmt` and `golint` enforces code style and identify potential issues.
+`gofmt` and `golangci-lint` enforce code style and identify potential issues.
 
 ---
 
 ## Conclusion
 
-By following these principles, I aim to create systems that are simple, maintainable, scalable, and easy to understand. This is a living document, and I’ll continue refining it as I learn.
+By following these principles, I aim to create systems that are simple, scalable, and easy to understand. 
+
+This guide is a reflection of practical patterns that work well for me, but the best engineering practices are forged through shared experiences and open debate.
+If you have a different perspective, an optimization, or a question about these architectural choices, please open an issue or start a discussion. If your point of view is validated by the community and aligns with our core goals of simplicity and maintainability, it will be integrated into this living document to benefit everyone.
