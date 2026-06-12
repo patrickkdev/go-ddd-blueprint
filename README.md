@@ -47,12 +47,12 @@ The project structure provides a consistent and predictable way to organize code
 ├── internal          # Internal application code (not intended for external use)
 │   ├── application     # Application-level services (use cases, orchestration)
 │   │   ├── chatbot_service.go  # Handles chatbot workflows (message processing, responses)
-│   │   ├── person_service.go   # Coordinates person-related operations (create, update, fetch)
+│   │   ├── user_service.go   # Coordinates user-related operations (create, update, fetch)
 │   │   └── auth_service.go     # Manages authentication (login, signup, token issuance)
 │   ├── domain          # Domain logic (entities, value objects, interfaces)
 │   │   ├── chat.go        # Example: Domain model for a Chat
 │   │   ├── message.go     # Example: Domain model for a Message
-│   │   ├── person.go      # Example: Domain model for a Person
+│   │   ├── user.go      # Example: Domain model for a User
 │   │   └── role.go        # Example: Domain model for a Role
 │   ├── infrastructure    # Implementation of external dependencies (databases, APIs, etc.)
 │   │   ├── ai           # Integration with AI services
@@ -62,7 +62,7 @@ The project structure provides a consistent and predictable way to organize code
 │   │   │   └── role.go    # AI-specific roles
 │   │   ├── database      # Database interaction (e.g., PostgreSQL)
 │   │   │   ├── client.go  # Database client
-│   │   │   └── person_repository.go # Implementation of PersonRepository
+│   │   │   └── user_repository.go # Implementation of UserRepository
 │   │   ├── messaging     # Generic messaging infrastructure
 │   │   │   └── sender.go    # Interface and common logic for message sending
 │   │   ├── telegram      # Integration with Telegram
@@ -74,12 +74,12 @@ The project structure provides a consistent and predictable way to organize code
 │   │       └── event.go   # Handling WhatsApp events
 │   └── interface       # Adapters for external systems (e.g., HTTP, CLI)
 │       ├── cli           # Command-line interface adapters
-│       │   └── person_cli_adapter.go # Example: CLI adapter for Person-related commands
+│       │   └── user_cli_adapter.go # Example: CLI adapter for User-related commands
 │       └── http          # HTTP interface adapters
 │           ├── html      # for http requests that return HTML
-│           │   └── person_http_adapter.go
+│           │   └── user_http_adapter.go
 │           └── api       # for http requests that return JSON
-│               └── person_http_adapter.go
+│               └── user_http_adapter.go
 ├── pkg               # Generic, reusable code with no knowledge of this app. Think small utilities you could publish as libraries. No domain logic, no tight coupling to internal packages.
 │   ├── debounce               # Time-based call coalescing (debounce.New)
 │   │   └── debounce.go        # Debouncer implementation
@@ -99,29 +99,29 @@ The project structure provides a consistent and predictable way to organize code
 
     -   **application:** This layer contains the use cases of the application. It orchestrates the interaction between the domain layer and the infrastructure layer. Application services are responsible for handling business transactions, validation (that *isn't* domain-level), and coordinating the work of multiple domain objects.
 
-        -   I keep the application layer as a single, flat package. This is because, in my experience, the services within this layer tend to be highly interconnected. Creating subpackages often leads to unnecessary complexity and circular dependencies. I use clear naming conventions (e.g., `ChatbotService`, `PersonService`) to organize the code within this package.
+        -   I keep the application layer as a single, flat package. This is because, in my experience, the services within this layer tend to be highly interconnected. Creating subpackages often leads to unnecessary complexity and circular dependencies. I use clear naming conventions (e.g., `ChatbotService`, `UserService`) to organize the code within this package.
 
     -   **domain:** This is the heart of the application. It contains the business logic, represented as entities, value objects, and interfaces. The domain layer is completely independent of any technical details, such as databases or web frameworks. It defines *what* the application does, not *how* it does it.
 
         -   Like the application layer, I also keep the domain layer as a single, flat package. I find that this simplifies the organization of domain concepts and reduces the likelihood of circular dependencies.
 
-        -   **Entities:** Represent objects with a unique identity and lifecycle (e.g., a `Person`, an `Order`). Entities encapsulate both data and behavior. Validation logic that enforces business rules is often placed within entity methods. For example, a `Person` entity might have a `ChangeName(newName string) error` method that validates the new name before updating the entity's state.
+        -   **Entities:** Represent objects with a unique identity and lifecycle (e.g., a `User`, an `Order`). Entities encapsulate both data and behavior. Validation logic that enforces business rules is often placed within entity methods. For example, a `User` entity might have a `ChangeName(newName string) error` method that validates the new name before updating the entity's state.
 
         -   **Value Objects:** Represent immutable objects that are defined by their attributes rather than their identity (e.g., a `Date`, a `Money` amount). Value objects should be treated as interchangeable; two value objects with the same attributes are considered equal.
 
-        -   **Interfaces:** Define contracts that are implemented by the infrastructure layer. For example, the domain layer might define a `MessageSender` interface with a `SendMessage(user Person, message Message) error` method. This allows the application layer to depend on the *abstraction* of message sending, without being tied to a specific *implementation* (e.g., sending via WhatsApp or Telegram). This is a key aspect of achieving loose coupling and testability.
+        -   **Interfaces:** Define contracts that are implemented by the infrastructure layer. For example, the domain layer might define a `MessageSender` interface with a `SendMessage(user User, message Message) error` method. This allows the application layer to depend on the *abstraction* of message sending, without being tied to a specific *implementation* (e.g., sending via WhatsApp or Telegram). This is a key aspect of achieving loose coupling and testability.
 
     -   **infrastructure:** This layer provides the technical implementation of the interfaces defined in the domain layer. It handles communication with external systems, such as databases, message queues, and third-party APIs. Code in this layer is responsible for *how* things are done.
 
-        -   I organize infrastructure implementations into subpackages based on the external system they interact with (e.g., `database`, `messaging`, `telegram`, `whatsapp`, `ai`). This keeps the code organized and makes it easy to find the implementation for a specific dependency. Within each subpackage, I may have further organization as needed, but I avoid creating excessively deep nesting. For example, the `database` package might contain a `client.go` for establishing the database connection, `models.go` for defining database-specific data structures (if necessary), and `person_repository.go` for implementing the `PersonRepository` interface defined in the domain layer. The key is to maintain a balance between organization and simplicity.
+        -   I organize infrastructure implementations into subpackages based on the external system they interact with (e.g., `database`, `messaging`, `telegram`, `whatsapp`, `ai`). This keeps the code organized and makes it easy to find the implementation for a specific dependency. Within each subpackage, I may have further organization as needed, but I avoid creating excessively deep nesting. For example, the `database` package might contain a `client.go` for establishing the database connection, `models.go` for defining database-specific data structures (if necessary), and `user_repository.go` for implementing the `UserRepository` interface defined in the domain layer. The key is to maintain a balance between organization and simplicity.
 
     -   **interface:** This layer acts as the entry point for external requests and translates them into commands that can be processed by the application layer. It's responsible for handling the specifics of the communication protocol (e.g., HTTP, CLI) and for presenting the application's response to the user.
 
         -   I structure this layer by the type of interface (e.g., `cli`, `http`). Within each interface type, I may further organize the code by specific functionality or technology.
 
-        -   For example, the `http` package might be further divided into `html` and `api` subpackages to handle different response formats. Each of these subpackages would then contain adapters for specific resources (e.g., `person_http_adapter.go`).
+        -   For example, the `http` package might be further divided into `html` and `api` subpackages to handle different response formats. Each of these subpackages would then contain adapters for specific resources (e.g., `user_http_adapter.go`).
 
-        -   The `cli` package would contain adapters that handle argument parsing, command dispatching, and output formatting. For example, `person_cli_adapter.go` might define functions to handle commands related to creating, updating, or deleting `Person` entities. It acts as an intermediary between the user's terminal input and the application layer.
+        -   The `cli` package would contain adapters that handle argument parsing, command dispatching, and output formatting. For example, `user_cli_adapter.go` might define functions to handle commands related to creating, updating, or deleting `User` entities. It acts as an intermediary between the user's terminal input and the application layer.
 
 -   **pkg:** This directory contains reusable packages that are not specific to the application's domain. These packages can be used across multiple projects. Examples include utility functions, generic data structures, and third-party library wrappers. Code in this directory should not depend on any code in the `internal` directory. 
 
@@ -208,7 +208,7 @@ To illustrate how these principles and patterns work in practice, let's consider
 ### Domain Layer
 
 ```go
-// internal/domain/person.go
+// internal/domain/user.go
 package domain
 
 import (
@@ -216,19 +216,19 @@ import (
 	"github.com/google/uuid"
 )
 
-// Person is an entity that represents a user in the system.
-type Person struct {
+// User is an entity that represents a user in the system.
+type User struct {
     ID    string
     Name  string
     Email string
     Role  Role
 }
 
-func NewPerson(name string, email string, role Role) (Person, error) {
+func NewUser(name string, email string, role Role) (User, error) {
     if len(name) < 3 {
-        return Person{}, ErrInvalidName
+        return User{}, ErrInvalidName
     }
-    return Person{
+    return User{
         ID:    uuid.New().String(),
         Name:  name,
         Email: email,
@@ -247,8 +247,8 @@ const (
 // ErrInvalidName is returned when a name is invalid.
 var ErrInvalidName = errors.New("name must be at least 3 characters long")
 
-// ChangeName changes the name of the person.
-func (p *Person) ChangeName(newName string) error {
+// ChangeName changes the name of the user.
+func (p *User) ChangeName(newName string) error {
     if len(newName) < 3 {
         return ErrInvalidName
     }
@@ -256,20 +256,20 @@ func (p *Person) ChangeName(newName string) error {
     return nil
 }
 
-// PersonRepository is an interface for persisting Person entities.
-type PersonRepository interface {
-    GetByID(id string) (Person, error)
-    Save(person Person) error
+// UserRepository is an interface for persisting User entities.
+type UserRepository interface {
+    GetByID(id string) (User, error)
+    Save(user User) error
 }
 
 ```
 
-In this example, `Person` is an entity with an `ID`, `Name`, `Email`, and `Role`. The `ChangeName` method enforces a business rule: the name must be at least 3 characters long. `Role` is a value object. `PersonRepository` is an interface for persisting `Person` entities.
+In this example, `User` is an entity with an `ID`, `Name`, `Email`, and `Role`. The `ChangeName` method enforces a business rule: the name must be at least 3 characters long. `Role` is a value object. `UserRepository` is an interface for persisting `User` entities.
 
 ### Application Layer
 
 ```go
-// internal/application/person.go
+// internal/application/user.go
 package application
 
 import (
@@ -277,69 +277,69 @@ import (
     "errors"
 )
 
-// PersonService provides use cases for managing persons.
-type PersonService struct {
-    personRepo domain.PersonRepository
+// UserService provides use cases for managing users.
+type UserService struct {
+    userRepo domain.UserRepository
 }
 
-// NewPersonService creates a new PersonService.
-func NewPersonService(personRepo domain.PersonRepository) *PersonService {
-    return &PersonService{
-        personRepo: personRepo,
+// NewUserService creates a new UserService.
+func NewUserService(userRepo domain.UserRepository) *UserService {
+    return &UserService{
+        userRepo: userRepo,
     }
 }
 
-// GetPersonByID retrieves a person by their ID.
-func (s *PersonService) GetPersonByID(id string) (domain.Person, error) {
-    person, err := s.personRepo.GetByID(id)
+// GetUserByID retrieves a user by their ID.
+func (s *UserService) GetUserByID(id string) (domain.User, error) {
+    user, err := s.userRepo.GetByID(id)
     if err != nil {
-        return domain.Person{}, err
+        return domain.User{}, err
     }
-    return person, nil
+    return user, nil
 }
 
-// UpdatePersonName updates the name of a person.
-func (s *PersonService) UpdatePersonName(id, newName string) error {
-    person, err := s.GetPersonByID(id)
+// UpdateUserName updates the name of a user.
+func (s *UserService) UpdateUserName(id, newName string) error {
+    user, err := s.GetUserByID(id)
     if err != nil {
         return err
     }
 
-    err = person.ChangeName(newName)
+    err = user.ChangeName(newName)
     if err != nil {
         return err // Return the error from the domain layer
     }
 
-    return s.personRepo.Save(person)
+    return s.userRepo.Save(user)
 }
 
-// CreatePerson creates a new person.
-func (s *PersonService) CreatePerson(name, email string, role domain.Role) (string, error) {
+// CreateUser creates a new user.
+func (s *UserService) CreateUser(name, email string, role domain.Role) (string, error) {
     // Application level validation
     if name == "" || email == "" || role == "" {
         return "", errors.New("name, email and role must not be empty")
     }
 
-    person, err := domain.NewPerson(name, email, role)
+    user, err := domain.NewUser(name, email, role)
     if err != nil {
     	return "", err
     }
 
-    err = s.personRepo.Save(person)
+    err = s.userRepo.Save(user)
     if err != nil {
         return "", err
     }
-    return person.ID, nil
+    return user.ID, nil
 }
 
 ```
 
-The `PersonService` implements use cases for managing `Person` entities. It uses the `PersonRepository` interface to interact with the persistence layer. It also handles application-level errors, such as `ErrPersonNotFound`, and ensures that domain logic is correctly applied.
+The `UserService` implements use cases for managing `User` entities. It uses the `UserRepository` interface to interact with the persistence layer. It also handles application-level errors, such as `ErrUserNotFound`, and ensures that domain logic is correctly applied.
 
 ### Infrastructure Layer
 
 ```go
-// internal/infrastructure/database/person_repository.go
+// internal/infrastructure/database/user_repository.go
 package database
 
 import (
@@ -348,51 +348,51 @@ import (
     "errors"
 )
 
-// PersonRepository is an implementation of the domain.PersonRepository interface.
-type PersonRepository struct {
+// UserRepository is an implementation of the domain.UserRepository interface.
+type UserRepository struct {
     db *sql.DB
 }
 
-// NewPersonRepository creates a new PersonRepository.
-func NewPersonRepository(db *sql.DB) *PersonRepository {
-    return &PersonRepository{
+// NewUserRepository creates a new UserRepository.
+func NewUserRepository(db *sql.DB) *UserRepository {
+    return &UserRepository{
         db: db,
     }
 }
 
-// GetByID retrieves a person from the database by their ID.
-func (r *PersonRepository) GetByID(id string) (domain.Person, error) {
-    row := r.db.QueryRow("SELECT id, name, email, role FROM persons WHERE id = $1", id)
-    var person domain.Person
-    err := row.Scan(&person.ID, &person.Name, &person.Email, &person.Role)
+// GetByID retrieves a user from the database by their ID.
+func (r *UserRepository) GetByID(id string) (domain.User, error) {
+    row := r.db.QueryRow("SELECT id, name, email, role FROM users WHERE id = $1", id)
+    var user domain.User
+    err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Role)
     if err != nil {
         if errors.Is(err, sql.ErrNoRows) {
-            return domain.Person{}, domain.ErrItemNotFound // Use the error from the domain
+            return domain.User{}, domain.ErrItemNotFound // Use the error from the domain
         }
-        return domain.Person{}, err
+        return domain.User{}, err
     }
-    return person, nil
+    return user, nil
 }
 
-// Save saves a person to the database.
-func (r *PersonRepository) Save(person domain.Person) error {
+// Save saves a user to the database.
+func (r *UserRepository) Save(user domain.User) error {
     _, err := r.db.Exec(
-        "INSERT INTO persons (id, name, email, role) VALUES ($1, $2, $3, $4) "+
+        "INSERT INTO users (id, name, email, role) VALUES ($1, $2, $3, $4) "+
             "ON CONFLICT (id) DO UPDATE SET name = $2, email = $3, role = $4",
-        person.ID, person.Name, person.Email, person.Role,
+        user.ID, user.Name, user.Email, user.Role,
     )
     return err
 }
 
 ```
 
-The `PersonRepository` in the `database` package implements the `domain.PersonRepository` interface using a PostgreSQL database. It handles the mapping between the domain model (`domain.Person`) and the database schema. Error handling is crucial here. I translate database-specific errors (e.g., `sql.ErrNoRows`) into domain-specific errors (e.g., `domain.ErrItemNotFound`) to avoid leaking implementation details.
+The `UserRepository` in the `database` package implements the `domain.UserRepository` interface using a PostgreSQL database. It handles the mapping between the domain model (`domain.User`) and the database schema. Error handling is crucial here. I translate database-specific errors (e.g., `sql.ErrNoRows`) into domain-specific errors (e.g., `domain.ErrItemNotFound`) to avoid leaking implementation details.
 
 ### Interface Layer
 
 #### CLI Example (Using Cobra framework)
 
-The `PersonCLIAdapter` handles command-line arguments, validates command arguments, and dispatches them to the appropriate `PersonService` methods.
+The `UserCLIAdapter` handles command-line arguments, validates command arguments, and dispatches them to the appropriate `UserService` methods.
 
 ```go
 // cmd/cli/main.go
@@ -410,18 +410,18 @@ func main() {
 	}
 	defer db.Close()
 
-	personRepo := database.NewPersonRepository(db)
-	personService := application.NewPersonService(personRepo)
-	personCLI := cli.NewPersonCLIAdapter(personService)
+	userRepo := database.NewUserRepository(db)
+	userservice := application.NewUserService(userRepo)
+	userAdapter := cli.NewUserCLIAdapter(userservice)
 
 	rootCmd := &cobra.Command{
 		Use: "app",
 	}
 
 	rootCmd.AddCommand(
-		personCLI.Command(),
-		// orderCLI.Command(),
-		// billingCLI.Command(),
+		userAdapter.Command(),
+		// orderAdapter.Command(),
+		// billingAdapter.Command(),
 	)
 
 	if err := rootCmd.Execute(); err != nil {
@@ -432,102 +432,102 @@ func main() {
 ```
 
 ```go
-// internal/interface/cli/person_cli_adapter.go
+// internal/interface/cli/user_cli_adapter.go
 package cli
 
 import (
 	...
 )
 
-// PersonCLIAdapter handles CLI commands for managing persons.
-type PersonCLIAdapter struct {
-	personService *application.PersonService
+// UserCLIAdapter handles CLI commands for managing users.
+type UserCLIAdapter struct {
+	userservice *application.UserService
 }
 
-func NewPersonCLIAdapter(personService *application.PersonService) *PersonCLIAdapter {
-	return &PersonCLIAdapter{
-		personService: personService,
+func NewUserCLIAdapter(userservice *application.UserService) *UserCLIAdapter {
+	return &UserCLIAdapter{
+		userservice: userservice,
 	}
 }
 
 // Command returns the root cobra command for this adapter.
-func (a *PersonCLIAdapter) Command() *cobra.Command {
+func (a *UserCLIAdapter) Command() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "person",
-		Short: "Manage persons",
+		Use:   "user",
+		Short: "Manage users",
 	}
 
 	cmd.AddCommand(
-		a.getPersonCmd(),
-		a.updatePersonCmd(),
-		a.createPersonCmd(),
+		a.getUserCmd(),
+		a.updateUserCmd(),
+		a.createUserCmd(),
 	)
 
 	return cmd
 }
 
-func (a *PersonCLIAdapter) getPersonCmd() *cobra.Command {
+func (a *UserCLIAdapter) getUserCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "get [id]",
-		Short: "Get a person by ID",
+		Short: "Get a user by ID",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return a.GetPersonByID(args[0])
+			return a.GetUserByID(args[0])
 		},
 	}
 }
 
-func (a *PersonCLIAdapter) updatePersonCmd() *cobra.Command {
+func (a *UserCLIAdapter) updateUserCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "update-name [id] [name]",
-		Short: "Update a person's name",
+		Short: "Update a user's name",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return a.UpdatePersonName(args[0], args[1])
+			return a.UpdateUserName(args[0], args[1])
 		},
 	}
 }
 
-func (a *PersonCLIAdapter) createPersonCmd() *cobra.Command {
+func (a *UserCLIAdapter) createUserCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "create [name] [email] [role]",
-		Short: "Create a new person",
+		Short: "Create a new user",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return a.CreatePerson(args[0], args[1], args[2])
+			return a.CreateUser(args[0], args[1], args[2])
 		},
 	}
 }
 
-func (a *PersonCLIAdapter) GetPersonByID(id string) error {
-	person, err := a.personService.GetPersonByID(id)
+func (a *UserCLIAdapter) GetUserByID(id string) error {
+	user, err := a.userservice.GetUserByID(id)
 	if err != nil {
 		if errors.Is(err, domain.ErrItemNotFound) {
-			return fmt.Errorf("person with ID '%s' not found", id)
+			return fmt.Errorf("user with ID '%s' not found", id)
 		}
 		return err
 	}
 
 	fmt.Printf("ID: %s, Name: %s, Email: %s, Role: %s\n",
-		person.ID, person.Name, person.Email, person.Role,
+		user.ID, user.Name, user.Email, user.Role,
 	)
 	return nil
 }
 
-func (a *PersonCLIAdapter) UpdatePersonName(id, newName string) error {
-	err := a.personService.UpdatePersonName(id, newName)
+func (a *UserCLIAdapter) UpdateUserName(id, newName string) error {
+	err := a.userservice.UpdateUserName(id, newName)
 	if err != nil {
 		if errors.Is(err, domain.ErrItemNotFound) {
-			return fmt.Errorf("person with ID '%s' not found", id)
+			return fmt.Errorf("user with ID '%s' not found", id)
 		}
 		return err
 	}
 
-	fmt.Println("Person name updated successfully.")
+	fmt.Println("User name updated successfully.")
 	return nil
 }
 
-func (a *PersonCLIAdapter) CreatePerson(name, email, role string) error {
+func (a *UserCLIAdapter) CreateUser(name, email, role string) error {
 	var roleValue domain.Role
 
 	switch role {
@@ -539,19 +539,19 @@ func (a *PersonCLIAdapter) CreatePerson(name, email, role string) error {
 		return fmt.Errorf("invalid role: must be 'admin' or 'user'")
 	}
 
-	personID, err := a.personService.CreatePerson(name, email, roleValue)
+	userID, err := a.userservice.CreateUser(name, email, roleValue)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Person created successfully with ID: %s\n", personID)
+	fmt.Printf("User created successfully with ID: %s\n", userID)
 	return nil
 }
 ```
 
 #### HTTP Example (Using standard net/http)
 
-The `PersonHTTPAdapter` handles incoming HTTP requests, decodes payloads, and routes them to the appropriate `PersonService` methods before returning JSON or HTML responses.
+The `UserHTTPAdapter` handles incoming HTTP requests, decodes payloads, and routes them to the appropriate `UserService` methods before returning JSON or HTML responses.
 
 ```go
 // cmd/api/main.go
@@ -568,13 +568,13 @@ func main() {
 	}
 	defer db.Close()
 
-	personRepo := database.NewPersonRepository(db)
-	personService := application.NewPersonService(personRepo)
+	userRepo := database.NewUserRepository(db)
+	userservice := application.NewUserService(userRepo)
 
-	personAdapter := api.NewPersonHTTPAdapter(personService)
+	userAdapter := api.NewUserHTTPAdapter(userservice)
 
 	mux := http.NewServeMux()
-	personAdapter.RegisterRoutes(mux)
+	userAdapter.RegisterRoutes(mux)
 
 	log.Println("HTTP server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
@@ -582,59 +582,59 @@ func main() {
 ```
 
 ```go
-// internal/interface/http/api/person_http_adapter.go
+// internal/interface/http/api/user_http_adapter.go
 package api
 
 import (
 	...
 )
 
-type PersonHTTPAdapter struct {
-	personService *application.PersonService
+type UserHTTPAdapter struct {
+	userservice *application.UserService
 }
 
-func NewPersonHTTPAdapter(personService *application.PersonService) *PersonHTTPAdapter {
-	return &PersonHTTPAdapter{
-		personService: personService,
+func NewUserHTTPAdapter(userservice *application.UserService) *UserHTTPAdapter {
+	return &UserHTTPAdapter{
+		userservice: userservice,
 	}
 }
 
 // RegisterRoutes wires HTTP routes to handlers.
-func (a *PersonHTTPAdapter) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /persons/{id}", a.GetPersonByID)
-	mux.HandleFunc("POST /persons", a.CreatePerson)
-	mux.HandleFunc("PATCH /persons/{id}/name", a.UpdatePersonName)
+func (a *UserHTTPAdapter) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /users/{id}", a.GetUserByID)
+	mux.HandleFunc("POST /users", a.CreateUser)
+	mux.HandleFunc("PATCH /users/{id}/name", a.UpdateUserName)
 }
 
-type PersonResponse struct {
+type UserResponse struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Role  string `json:"role"`
 }
 
-func (a *PersonHTTPAdapter) GetPersonByID(w http.ResponseWriter, r *http.Request) {
+func (a *UserHTTPAdapter) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	person, err := a.personService.GetPersonByID(id)
+	user, err := a.userservice.GetUserByID(id)
 	if err != nil {
 		if errors.Is(err, domain.ErrItemNotFound) {
-			http.Error(w, "person not found", http.StatusNotFound)
+			http.Error(w, "user not found", http.StatusNotFound)
 			return
 		}
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, PersonResponse{
-		ID:    person.ID,
-		Name:  person.Name,
-		Email: person.Email,
-		Role:  string(person.Role),
+	writeJSON(w, http.StatusOK, UserResponse{
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+		Role:  string(user.Role),
 	})
 }
 
-func (a *PersonHTTPAdapter) CreatePerson(w http.ResponseWriter, r *http.Request) {
+func (a *UserHTTPAdapter) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name  string `json:"name"`
 		Email string `json:"email"`
@@ -657,7 +657,7 @@ func (a *PersonHTTPAdapter) CreatePerson(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	id, err := a.personService.CreatePerson(req.Name, req.Email, role)
+	id, err := a.userservice.CreateUser(req.Name, req.Email, role)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -666,7 +666,7 @@ func (a *PersonHTTPAdapter) CreatePerson(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusCreated, map[string]string{"id": id})
 }
 
-func (a *PersonHTTPAdapter) UpdatePersonName(w http.ResponseWriter, r *http.Request) {
+func (a *UserHTTPAdapter) UpdateUserName(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	var req struct {
@@ -678,10 +678,10 @@ func (a *PersonHTTPAdapter) UpdatePersonName(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err := a.personService.UpdatePersonName(id, req.Name)
+	err := a.userservice.UpdateUserName(id, req.Name)
 	if err != nil {
 		if errors.Is(err, domain.ErrItemNotFound) {
-			http.Error(w, "person not found", http.StatusNotFound)
+			http.Error(w, "user not found", http.StatusNotFound)
 			return
 		}
 		http.Error(w, "internal error", http.StatusInternalServerError)
