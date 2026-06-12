@@ -45,8 +45,9 @@ The project structure provides a consistent and predictable way to organize code
 ├── go.sum           # Go module dependencies
 ├── internal          # Internal application code (not intended for external use)
 │   ├── application     # Application-level services (use cases, orchestration)
-│   │   ├── chatbot_service.go # Example: A service for managing chatbot interactions
-│   │   └── person.go      # Example: Application logic related to Person
+│   │   ├── chatbot_service.go  # Handles chatbot workflows (message processing, responses)
+│   │   ├── person_service.go   # Coordinates person-related operations (create, update, fetch)
+│   │   └── auth_service.go     # Manages authentication (login, signup, token issuance)
 │   ├── domain          # Domain logic (entities, value objects, interfaces)
 │   │   ├── chat.go        # Example: Domain model for a Chat
 │   │   ├── message.go     # Example: Domain model for a Message
